@@ -37,9 +37,10 @@ public class GameWindow extends JPanel{
     public void fenetre_avant_jeu() {
         System.out.println("affichage fenetre avant jeu");
          SwingUtilities.invokeLater(() -> {
-            frame = new JFrame("Avant le jeu");
+            frame = new JFrame("EXAPUNKS - System Boot");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(1265, 665);
+            frame.getContentPane().setBackground(Color.BLACK);
 
             BufferedImage image = null;
             try {
@@ -50,45 +51,44 @@ public class GameWindow extends JPanel{
 
             // Create a layered pane to manage z-index
             JLayeredPane layeredPane = new JLayeredPane();
-            layeredPane.setPreferredSize(new Dimension(800, 600));
+            layeredPane.setPreferredSize(new Dimension(1265, 665));
 
-            JLabel backgroundLabel = new JLabel(new ImageIcon(image));
-            backgroundLabel.setBounds(0, 0, image.getWidth(), image.getHeight());
-            layeredPane.add(backgroundLabel, Integer.valueOf(1));
+            if (image != null) {
+                JLabel backgroundLabel = new JLabel(new ImageIcon(image));
+                backgroundLabel.setBounds(0, 0, 1265, 665);
+                layeredPane.add(backgroundLabel, Integer.valueOf(1));
+            }
 
             // Create a transparent panel for buttons
             JPanel buttonPanel = new JPanel(new GridBagLayout());
             buttonPanel.setOpaque(false);
             GridBagConstraints constraints = new GridBagConstraints();
-            constraints.insets = new Insets(10, 10, 10, 10);
+            constraints.insets = new Insets(15, 15, 15, 15);
 
             // Add the "Jouer" button
-            jouerButton = createButton("Jouer", Color.LIGHT_GRAY, e -> afficherOptionsNiveau());
+            jouerButton = createButton("INITIALIZE MISSION", Color.BLACK, e -> {
+                afficherOptionsNiveau();
+                frame.dispose();
+            });
             constraints.gridx = 0;
             constraints.gridy = 0;
             buttonPanel.add(jouerButton, constraints);
 
-            // Add the "Paramètre" button
-            parametreButton = createButton("Paramètre", Color.LIGHT_GRAY, e -> {
-                // Your parameter settings action here
-            });
-            constraints.gridy = 1;
-            buttonPanel.add(parametreButton, constraints);
-
             // Add the "Quitter" button
-            quitterButton = createButton("Quitter", Color.LIGHT_GRAY, e -> {
-                JOptionPane.showMessageDialog(null, "Au revoir !");
+            quitterButton = createButton("TERMINATE SESSION", Color.BLACK, e -> {
+                JOptionPane.showMessageDialog(null, "Session Terminated.");
                 System.exit(0);
             });
-            constraints.gridy = 2;
+            constraints.gridy = 1;
             buttonPanel.add(quitterButton, constraints);
 
             // Position des bouttons dans les fentres
-            buttonPanel.setBounds(100, 100, 400, 400); // Set this as needed
+            buttonPanel.setBounds(432, 200, 400, 400); 
             layeredPane.add(buttonPanel, Integer.valueOf(2));
 
             // Set the layered pane as the content pane
             frame.setContentPane(layeredPane);
+            frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
     }
@@ -97,17 +97,25 @@ public class GameWindow extends JPanel{
     private static JButton createButton(String text, Color color, ActionListener actionListener) {
         JButton button = new JButton(text);
         button.setPreferredSize(new Dimension(200, 50));
-        button.setBackground(color);
+        button.setBackground(new Color(40, 40, 45));
+        button.setForeground(new Color(51, 255, 51));
+        button.setFocusPainted(false);
+        button.setFont(new Font("Monospaced", Font.BOLD, 16));
+        button.setBorder(BorderFactory.createLineBorder(new Color(0, 153, 0), 2));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Effet de survol simple (optionnel, via un MouseListener si on voulait aller plus loin)
         button.addActionListener(actionListener);
         return button;
     }
 
   
     public void afficherFenetreJeu(Niveau niveau) {
-        frame2 = new JFrame("Jeu");
+        frame2 = new JFrame("EXAPUNKS Clone - Console");
         frame2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame2.setSize(1265, 665);
+        frame2.setSize(1265, 750);
         frame2.setLayout(new BorderLayout());
+        frame2.getContentPane().setBackground(Color.BLACK);
     
         // Création d'un JLayeredPane pour la gestion des superpositions
         JLayeredPane layeredPane = new JLayeredPane();
@@ -115,31 +123,43 @@ public class GameWindow extends JPanel{
     
         // Configuration du grillePanel avec la grille de jeu
         JPanel grillePanel = new JPanel();
-        grillePanel.setBackground(new Color(0,0,0,0)); // Fond transparent pour voir l'image derrière
+        grillePanel.setOpaque(false);
         gamePanel = new GamePanel(niveau);
-        grillePanel.add(gamePanel, BorderLayout.CENTER);
-        grillePanel.setBounds(-120, 70, 1265, 535); // Coordonnées et taille du panel de jeu
-        layeredPane.add(grillePanel, JLayeredPane.DEFAULT_LAYER); // Ajout au layer par défaut
+        grillePanel.add(gamePanel);
+        grillePanel.setBounds(0, 50, 1000, 500); 
+        layeredPane.add(grillePanel, JLayeredPane.DEFAULT_LAYER); 
     
-        // Ajout de l'image de fond
-        JLabel backgroundLabel = new JLabel(new ImageIcon("src/assets/images/fond.png"));
-        backgroundLabel.setBounds(0, 0, 1000, 535);
-        layeredPane.add(backgroundLabel, JLayeredPane.DEFAULT_LAYER); // Place derrière le grillePanel
+        // Ajout de l'image de fond (on peut la garder ou la remplacer par un fond uni)
+        JLabel backgroundLabel = new JLabel();
+        backgroundLabel.setOpaque(true);
+        backgroundLabel.setBackground(new Color(15, 15, 20));
+        backgroundLabel.setBounds(0, 0, 1000, 600);
+        layeredPane.add(backgroundLabel, JLayeredPane.DEFAULT_LAYER); 
     
         // Configuration du JScrollPane pour les règles du jeu
-        JTextArea rulesTextArea = new JTextArea("Ici vos règles du jeu...");
+        JTextArea rulesTextArea = new JTextArea(" MISSION OBJECTIVE:\n ------------------\n " + niveau.getMission());
         rulesTextArea.setEditable(false);
+        rulesTextArea.setBackground(new Color(5, 5, 10));
+        rulesTextArea.setForeground(new Color(0, 200, 255));
+        rulesTextArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        rulesTextArea.setBorder(BorderFactory.createLineBorder(new Color(0, 50, 100)));
+        
         JScrollPane rulesScrollPane = new JScrollPane(rulesTextArea);
         rulesScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        rulesScrollPane.setPreferredSize(new Dimension(frame2.getWidth(), 130));
+        rulesScrollPane.setPreferredSize(new Dimension(frame2.getWidth(), 100));
+        rulesScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        rulesScrollPane.setBackground(Color.BLACK);
     
         // Panneau central incluant le layeredPane
         JPanel panneaucentral = new JPanel(new BorderLayout());
+        panneaucentral.setOpaque(false);
         panneaucentral.add(layeredPane, BorderLayout.CENTER);
         panneaucentral.add(rulesScrollPane, BorderLayout.SOUTH);
     
         // Configuration du panel pour les textes et boutons
         JPanel textAndButtonsPanel = setupTextAndButtonsPanel(niveau);
+        textAndButtonsPanel.setBackground(Color.BLACK);
+        textAndButtonsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
     
         // Assemblage finale dans le JFrame
         frame2.add(textAndButtonsPanel, BorderLayout.LINE_START);
@@ -151,16 +171,24 @@ public class GameWindow extends JPanel{
     }
     
     private JPanel setupTextAndButtonsPanel(Niveau niveau) {
-        JPanel textAndButtonsPanel = new JPanel(new BorderLayout());
-        textZone = new TextZone();
-        textAndButtonsPanel.add(textZone, BorderLayout.PAGE_START);
+        JPanel container = new JPanel(new BorderLayout());
+        container.setOpaque(false);
         
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
-        JButton stopButton = new JButton("Stop");
-        JButton avancerButton = new JButton("Avancer");
+        textZone = new TextZone();
+        container.add(textZone, BorderLayout.CENTER);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.setOpaque(false);
+        
+        JButton stopButton = new JButton("RESET");
+        JButton avancerButton = new JButton("STEP >>");
+        
+        styleActionButton(stopButton, new Color(150, 0, 0));
+        styleActionButton(avancerButton, new Color(0, 100, 200));
+        
         buttonPanel.add(stopButton);
         buttonPanel.add(avancerButton);
-        textAndButtonsPanel.add(buttonPanel, BorderLayout.SOUTH);
+        container.add(buttonPanel, BorderLayout.SOUTH);
         
         stopButton.addActionListener(e -> textZone.reinitialiserJeu());
         avancerButton.addActionListener(e -> SharedSemaphore.release());
@@ -168,17 +196,32 @@ public class GameWindow extends JPanel{
         if (niveau instanceof Niveau3) {
             textZone2 = new TextZone();
             JPanel textZonesPanel = new JPanel();
+            textZonesPanel.setOpaque(false);
             textZonesPanel.setLayout(new BoxLayout(textZonesPanel, BoxLayout.PAGE_AXIS));
             textZonesPanel.add(textZone);
             textZonesPanel.add(textZone2);
-            textAndButtonsPanel.add(textZonesPanel, BorderLayout.PAGE_START);
+            container.add(textZonesPanel, BorderLayout.CENTER);
         }
         
-        return textAndButtonsPanel;
+        return container;
+    }
+
+    private void styleActionButton(JButton button, Color accentColor) {
+        button.setPreferredSize(new Dimension(110, 40));
+        button.setBackground(Color.BLACK);
+        button.setForeground(accentColor);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Monospaced", Font.BOLD, 12));
+        button.setBorder(BorderFactory.createLineBorder(accentColor, 2));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
     
     public TextZone getTextZone() {
         return textZone;
+    }
+
+    public TextZone getTextZone2() {
+        return textZone2;
     }
 
    

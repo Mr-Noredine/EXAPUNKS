@@ -19,7 +19,14 @@ public class Niveau3 extends Niveau {
         InitialiserFichierLancement();
         InitialiserRobotLancement();
         
-        grille = new Grille(robotsLancement, fichiersLancement);
+        TypeTerritoire[][] layout = {
+            {TypeTerritoire.LIBRE, TypeTerritoire.PORTE2, TypeTerritoire.OCCUPE, TypeTerritoire.PORTE3, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.PORTE5, TypeTerritoire.OCCUPE, TypeTerritoire.PORTE4, TypeTerritoire.LIBRE}
+        };
+        grille = new Grille(robotsLancement, fichiersLancement, layout);
         for (Fichier fichier : fichiersLancement) {
             if (fichier.getId() == 199) {
                 fichier.afficherContenu();
@@ -37,14 +44,14 @@ public class Niveau3 extends Niveau {
 
     public String getDescription() {
         String description = " File 199 contains exactly two values: a Keyword and a number. "
-        + "Create a new file in the position (3, 4) and copy those two values to it, swapping their order" +
+        + "Create a new file in the OUTBOX and copy those two values to it, swapping their order" +
         " so that the nubmer is first. \n When you are finished, delete file 199.";
 
         return description;
     }
 
     public String getMission() {
-        String mission = " -> Create the specified file in the area (3, 4).\n";
+        String mission = " -> Create the specified file in the OUTBOX.\n";
         mission += "-> Delete file 199.";
         mission += "-> Leave no trace";
 

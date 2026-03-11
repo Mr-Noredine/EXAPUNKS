@@ -31,8 +31,6 @@ public class Controller implements Runnable {
     @Override
     public void run() {
         while (gameThread != null) {
-            
-            System.out.println("SALUT !");
             try {
                 SharedSemaphore.acquire();
                 update(1);
@@ -42,7 +40,6 @@ public class Controller implements Runnable {
             gameWindow.repaint();
         }
     }
-
 
     public void update(int id) {     
         String code = gameWindow.getTextZone().getTextArea().getText();

@@ -15,7 +15,14 @@ public class Niveau1 extends Niveau {
         InitialiserFichierLancement();
         InitialiserRobotLancement();
         
-        grille = new Grille(robotsLancement, fichiersLancement);
+        TypeTerritoire[][] layout = {
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE}
+        };
+        grille = new Grille(robotsLancement, fichiersLancement, layout);
         for (Fichier fichier : fichiersLancement) {
             if (fichier.getId() == 200) {
                 fichier.afficherContenu();
@@ -25,15 +32,15 @@ public class Niveau1 extends Niveau {
     }
 
     public String getDescription() {
-        String description = " Move file 200 to the position (3, 4). \n";
-        description += "This task, requires you to leave no trace," +
+        String description = " Move file 200 to the OUTBOX area. \n";
+        description += "This task requires you to leave no trace," +
         "and not make any changes to the network other than those specified !";
 
         return description;
     }
 
     public String getMission() {
-        String mission = " -> Move file 200 to the position (3, 4) \n";
+        String mission = " -> Move file 200 to the OUTBOX \n";
         mission += "Leave no trace";
 
         return mission;

@@ -18,7 +18,14 @@ public class Niveau2 extends Niveau {
         InitialiserFichierLancement();
         InitialiserRobotLancement();
         
-        grille = new Grille(robotsLancement, fichiersLancement);
+        TypeTerritoire[][] layout = {
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.PORTE2, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.PORTE3, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.PORTE5, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.PORTE4}
+        };
+        grille = new Grille(robotsLancement, fichiersLancement, layout);
         for (Fichier fichier : fichiersLancement) {
             if (fichier.getId() == 200) {
                 fichier.afficherContenu();
@@ -30,14 +37,14 @@ public class Niveau2 extends Niveau {
     public String getDescription() {
         String description = " Add the first two values of file 200, "
         + "multiply the result by the third value, and then substract the fourth value. \n" +
-        " Append the result to the end of the file and then move it to the position (3, 4).";
+        " Append the result to the end of the file and then move it to the OUTBOX.";
 
         return description;
     }
 
     public String getMission() {
         String mission = " -> Append the correct value to the end of file 200.\n";
-        mission += "-> Move file 200 to the area (3, 4)";
+        mission += "-> Move file 200 to the OUTBOX";
         mission += "-> Leave no trace";
 
         return mission;

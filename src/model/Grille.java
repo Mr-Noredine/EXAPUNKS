@@ -20,14 +20,17 @@ public class Grille {
     private Map<Integer, Integer[]> destinationsPortes;
     
     public Grille(ArrayList<Robot> robots, ArrayList<Fichier> fichiers) {
-        // Initialiser la grille avec les types de territoire plutôt que des int
-        territoires = new TypeTerritoire[][] {
-            {TypeTerritoire.LIBRE, TypeTerritoire.PORTE2, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.PORTE3, TypeTerritoire.PORTE5},
+        this(robots, fichiers, new TypeTerritoire[][] {
+            {TypeTerritoire.LIBRE, TypeTerritoire.PORTE2, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.PORTE3},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
             {TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.PORTE4, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
-        };
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.PORTE5, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.PORTE4},
+        });
+    }
+
+    public Grille(ArrayList<Robot> robots, ArrayList<Fichier> fichiers, TypeTerritoire[][] customTerritoires) {
+        this.territoires = customTerritoires;
         cases = new Case[5][5];
         this.robots = new ArrayList<>(robots);
         this.fichiers = new ArrayList<>(fichiers);
@@ -51,10 +54,28 @@ public class Grille {
     }
     private void initDestinationsPortes() {
         destinationsPortes = new HashMap<>();
-        destinationsPortes.put(2, new Integer[]{3, 0});
-        destinationsPortes.put(3, new Integer[]{0, 3});
-        destinationsPortes.put(4, new Integer[]{4, 4});
-        destinationsPortes.put(5, new Integer[]{1, 1});
+        
+        // Dynamic detection of portal pairs
+        Map<Integer, Integer[]> portalCoords = new HashMap<>();
+        for (int y = 0; y < territoires.length; y++) {
+            for (int x = 0; x < territoires[y].length; x++) {
+                int val = territoires[y][x].getValeur();
+                if (val >= 2) {
+                    portalCoords.put(val, new Integer[]{x, y});
+                }
+            }
+        }
+
+        // Pair PORTE2 <-> PORTE5
+        if (portalCoords.containsKey(2) && portalCoords.containsKey(5)) {
+            destinationsPortes.put(2, portalCoords.get(5));
+            destinationsPortes.put(5, portalCoords.get(2));
+        }
+        // Pair PORTE3 <-> PORTE4
+        if (portalCoords.containsKey(3) && portalCoords.containsKey(4)) {
+            destinationsPortes.put(3, portalCoords.get(4));
+            destinationsPortes.put(4, portalCoords.get(3));
+        }
     }
 
     ////////////ajout d'un fichier dans la grille/////////////////
@@ -244,54 +265,38 @@ public class Grille {
     ////////////////////LINK //////////////////////////
     public void traiterCommandeLink(int id, String direction) {
         Robot r = getRobotId(id);
-        if (r == null || !r.estActif()) {
-            System.out.println("Robot non trouvé.");
-            return;
-        }
-        System.out.println("Le robot est dans la case(" + r.getPositionX() + "," + r.getPositionY() + ") avant de bouger ");
+        if (r == null || !r.estActif()) return;
+
         int newX = r.getPositionX();
         int newY = r.getPositionY();
-        // Calculer les nouvelles coordonnées en fonction de la direction
+        
         switch (direction.toLowerCase()) {
-            case "left":
-                newX -= 1;
-                break;
-            case "right":
-                newX += 1;
-                break;
-            case "up":
-                newY -= 1;
-                break;
-            case "down":
-                newY += 1;
-                break;
-            default:
-                System.out.println("Direction invalide.");
+            case "left" -> newX -= 1;
+            case "right" -> newX += 1;
+            case "up" -> newY -= 1;
+            case "down" -> newY += 1;
+            default -> {
+                System.out.println("Unknown direction: " + direction);
                 return;
+            }
         }
-        // Vérifier si les nouvelles coordonnées sont dans les limites de la grille
+
         if (newX < 0 || newX >= 5 || newY < 0 || newY >= 5) {
-            System.out.println("Le robot ne peut pas passer dans cette direction car il sortirait de la grille.");
+            System.out.println("Out of bounds: (" + newX + "," + newY + ")");
             return;
         }
-        System.out.println("Le robot est sensé passer vers la case(" + newX + "," + newY + ") ");
+
         TypeTerritoire territoire = getTerritoire(newX, newY);
     
         if (estZoneAccessible(newX, newY)) {
             r.moveTo(newX, newY);
-            System.out.println("Le robot a passé vers la case (" + newX + "," + newY + ").");
         } else if (estPorteNumerotee(newX, newY)) {
             int porteNumero = territoireToPorteNumero(territoire);
-            System.out.println("LA PORTE NUMERO" + porteNumero);
             if (porteNumero >= 0) {
-                // Ajustez l'affichage du numéro de porte ici si nécessaire
-                System.out.println("Le robot a passé par la porte numéro " + (porteNumero - 2) + ".");
                 deplacerRobotVersPorte(id, porteNumero);
-            } else {
-                System.out.println("Le robot est à une porte, mais le numéro de porte est invalide.");
             }
         } else {
-            System.out.println("Le robot ne peut pas passer dans cette direction à cause d'un obstacle.");
+            System.out.println("Obstacle at (" + newX + "," + newY + ")");
         }
     }
     
@@ -358,7 +363,7 @@ public class Grille {
   
     
     //////////// add /////////////////// 
-    private int obtenirValeur(Robot r, String input) throws NumberFormatException {
+    public int obtenirValeur(Robot r, String input) throws NumberFormatException {
         // Essayez de convertir directement input en int
         try {
             return Integer.parseInt(input);

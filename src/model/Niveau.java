@@ -60,6 +60,9 @@ public abstract class Niveau{
     public abstract String getMission();
     public abstract boolean testVectoire();
     
+    public int getTargetX() { return 3; }
+    public int getTargetY() { return 4; }
+    
     public void setNbSolution() {
         nbSolutions++;
     }

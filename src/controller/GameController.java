@@ -6,6 +6,7 @@ import javax.swing.SwingUtilities;
 import model.*;
 import view.GamePanel;
 import view.GameWindow;
+import view.TextZone;
 
 public class GameController {
     
@@ -42,11 +43,14 @@ public class GameController {
         Robot robot = grille.getRobotId(id);
         if (robot == null || !robot.estActif()) return;
 
+        TextZone tz = (id == 2 && gameWindow.getTextZone2() != null) ? gameWindow.getTextZone2() : gameWindow.getTextZone();
+
         String[] lines = code.split("\n");
         int currentIndex = robot.getCurrentIndex();
 
         if (currentIndex >= lines.length) {
             System.out.println("Fin du programme pour le robot " + id);
+            tz.highlightLine(-1); // Remove highlight
             return;
         }
 
@@ -56,10 +60,17 @@ public class GameController {
             currentIndex++;
             if (currentIndex >= lines.length) {
                 robot.setCurrentIndex(currentIndex);
+                tz.highlightLine(-1);
                 return;
             }
             line = lines[currentIndex].trim();
         }
+        
+        // Persist the index after skipping
+        robot.setCurrentIndex(currentIndex);
+
+        // Highlight the current line BEFORE executing
+        tz.highlightLine(currentIndex);
 
         Instruction instruction = analyseurSyntaxique.getCommande(line);
         if (instruction != null && instruction.getMotCommande() != null) {
@@ -110,55 +121,39 @@ public class GameController {
         robot.setCurrentIndex(currentIndex);
         SwingUtilities.invokeLater(() -> {
             gamePanel.repaint();
-            updateUI(robot);
+            updateUI(robot, tz);
         });
     }
 
     private void handleTest(Robot robot, String[] args) {
         if (args.length < 3) return;
         try {
-            int v1 = obtenirValeur(robot, args[0]);
+            int v1 = grille.obtenirValeur(robot, args[0]);
             String op = args[1];
-            int v2 = obtenirValeur(robot, args[2]);
+            int v2 = grille.obtenirValeur(robot, args[2]);
             boolean result = false;
             switch (op) {
                 case "=": result = (v1 == v2); break;
                 case ">": result = (v1 > v2); break;
                 case "<": result = (v1 < v2); break;
                 case "!=": result = (v1 != v2); break;
+                case ">=": result = (v1 >= v2); break;
+                case "<=": result = (v1 <= v2); break;
             }
             robot.setCaseMemoire(1, result ? 1 : 0);
         } catch (Exception e) {
-            System.err.println("Erreur TEST: " + e.getMessage());
+            System.err.println("Error in handleTest: " + e.getMessage());
         }
     }
 
-    private int obtenirValeur(Robot r, String input) {
-        try {
-            return Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            switch (input.toUpperCase()) {
-                case "X": return (Integer) r.getCaseMemoire(0);
-                case "T": return (Integer) r.getCaseMemoire(1);
-                case "M": return (Integer) r.getRegistreM();
-                case "F":
-                    if (r.getFichierEnMain() != null) {
-                        String val = r.getFichierEnMain().retirerContenu();
-                        return val != null ? Integer.parseInt(val) : 0;
-                    }
-            }
-        }
-        return 0;
-    }
-
-    private void updateUI(Robot r) {
-        gameWindow.getTextZone().setMemoryArea1Text(String.valueOf(r.getCaseMemoire(0)));
-        gameWindow.getTextZone().setMemoryArea2Text(String.valueOf(r.getCaseMemoire(1)));
-        gameWindow.getTextZone().setMemoryArea4Text(String.valueOf(r.getRegistreM()));
+    private void updateUI(Robot r, TextZone tz) {
+        tz.setMemoryArea1Text(String.valueOf(r.getCaseMemoire(0)));
+        tz.setMemoryArea2Text(String.valueOf(r.getCaseMemoire(1)));
+        tz.setMemoryArea4Text(String.valueOf(r.getRegistreM()));
         if (r.getFichierEnMain() != null) {
-            gameWindow.getTextZone().setMemoryArea3Text("Holding: " + r.getFichierEnMain().getId());
+            tz.setMemoryArea3Text("F: " + r.getFichierEnMain().getId());
         } else {
-            gameWindow.getTextZone().setMemoryArea3Text("None");
+            tz.setMemoryArea3Text("None");
         }
     }
 
