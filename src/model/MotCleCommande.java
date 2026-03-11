@@ -3,7 +3,7 @@ public class MotCleCommande {
 	/**
 	 *  Un tableau constant contenant tous les mots-clé valides comme commandes.
 	 */
-	private final static String commandesValides[] = {"LINK", "COPY", "GRAB", "DROP", "ADDI", "SUBI", "MULI", "HALT", "JUMP", "FJUMP", "TEST"};
+	private final static String commandesValides[] = {"LINK", "COPY", "GRAB", "DROP", "ADDI", "SUBI", "MULI", "HALT", "JUMP", "FJUMP", "TEST", "TJUMP", "MARK"};
 
 
 	/**

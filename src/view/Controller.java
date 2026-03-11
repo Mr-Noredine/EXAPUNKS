@@ -47,7 +47,7 @@ public class Controller implements Runnable {
     public void update(int id) {     
         String code = gameWindow.getTextZone().getTextArea().getText();
         System.out.println(code);
-        gameController.executeNextCommand(code, id);  
+        gameController.executeNextStep(id, code);  
     }
 
     public void paintComponent() {

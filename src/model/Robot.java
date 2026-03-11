@@ -10,9 +10,7 @@ public class Robot {
     private Object[] casesMemoire; // Tableau pour les cases mémoire, en effet ici la case 0 represente X et l'autre represente T
     private  Object registreM ; // il est global entre les deux robots
     private boolean estActif = true;
-
-
-
+    private int currentIndex = 0;
 
     public Robot(int id, int positionX, int positionY) {
         this.id = id;
@@ -88,6 +86,14 @@ public class Robot {
 
     public boolean estActif() {
         return estActif;
+    }
+
+    public int getCurrentIndex() {
+        return currentIndex;
+    }
+
+    public void setCurrentIndex(int currentIndex) {
+        this.currentIndex = currentIndex;
     }
 
     public int getPremierNombre() {

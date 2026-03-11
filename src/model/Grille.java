@@ -510,7 +510,7 @@ public class Grille {
         int valeur = 0;
         boolean sourceValid = false;
 
-        switch (source) {
+        switch (source.toUpperCase()) {
             case "X":
                 valeur = (Integer) r.getCaseMemoire(0);
                 sourceValid = true;
@@ -540,8 +540,13 @@ public class Grille {
                 }
                 break;
             default:
-                System.out.println("Source invalide.");
-                return;
+                try {
+                    valeur = Integer.parseInt(source);
+                    sourceValid = true;
+                } catch (NumberFormatException e) {
+                    System.out.println("Source invalide : " + source);
+                    return;
+                }
         }
 
         switch (destination) {

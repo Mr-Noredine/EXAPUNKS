@@ -1,168 +1,198 @@
 package controller;
 
-
-import javax.swing.JTextArea;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.SwingUtilities;
-
 import model.*;
 import view.GamePanel;
 import view.GameWindow;
-import view.TextZone;
+
 public class GameController {
     
     private Grille grille;
     private GamePanel gamePanel;
     private GameWindow gameWindow;
     private AnalyseurSyntaxique analyseurSyntaxique = new AnalyseurSyntaxique();
-    // private Random random = new Random();
+    private Map<String, Integer> labels = new HashMap<>();
+    private String currentCode = "";
+
     public GameController(GameWindow gameWindow, Grille grille) {
         this.grille = grille;
         this.gamePanel = gameWindow.getGamePanel();
-        this.gameWindow=gameWindow;
-    
+        this.gameWindow = gameWindow;
     }
-    public void executeNextCommand(String code, int id) {
 
-        new Thread(() -> {
-            String[] lines = code.split("\n");
-            int currentIndex = 0; // Commence à la première ligne
-            int nbJump = 0;
-            boolean dernierTestResultat = false; // Stocke le résultat du dernier TEST
-    
-            while (currentIndex < lines.length) {
-                String line = lines[currentIndex].trim();
-                if (!line.isEmpty()) { // Ignore les lignes vides
-                    Instruction instruction = analyseurSyntaxique.getCommande(line);
-                    if (instruction != null) {
-                        // Ajout de la gestion pour TEST
-                        if ("TEST".equals(instruction.getMotCommande().toUpperCase())) {
-                            JTextArea memoryArea1 = gameWindow.getTextZone().getMemoryArea1(); // Obtient l'objet JTextArea
-                            String valeur = memoryArea1.getText(); // Convertit le contenu du JTextArea en String
-                            int valeurX =(Integer.parseInt(valeur)); // Vous devez obtenir la valeur actuelle de X
-                            dernierTestResultat = valeurX != 0; // TEST X != 0
-                        } else {
-                            executeInstruction(id, instruction);
-                        }
-    
-                        // Si la commande est JUMP, et que c'est le premier saut, ou FJUMP basé sur le résultat de TEST
-                        if ("JUMP".equals(instruction.getMotCommande().toUpperCase()) && nbJump == 0) {
-                            nbJump++;
-                            currentIndex = adjustJumpIndex(instruction, currentIndex, lines);
-                        } else if ("FJUMP".equals(instruction.getMotCommande().toUpperCase()) && !dernierTestResultat) {
-                            nbJump++;
-                            currentIndex = adjustJumpIndex(instruction, currentIndex, lines);
-                        }
-    
-                        try {
-                            Thread.sleep(2000); // Attend 2 secondes
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt(); // Restaure l'état d'interruption
-                            return; // Sort du thread si une interruption est capturée
+    private void preprocess(String code) {
+        if (code.equals(currentCode)) return;
+        currentCode = code;
+        labels.clear();
+        String[] lines = code.split("\n");
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (line.endsWith(":")) {
+                labels.put(line.substring(0, line.length() - 1), i);
+            } else if (line.startsWith("MARK ")) {
+                labels.put(line.substring(5).trim(), i);
+            }
+        }
+    }
+
+    public void executeNextStep(int id, String code) {
+        preprocess(code);
+        Robot robot = grille.getRobotId(id);
+        if (robot == null || !robot.estActif()) return;
+
+        String[] lines = code.split("\n");
+        int currentIndex = robot.getCurrentIndex();
+
+        if (currentIndex >= lines.length) {
+            System.out.println("Fin du programme pour le robot " + id);
+            return;
+        }
+
+        String line = lines[currentIndex].trim();
+        // Skip labels and empty lines
+        while (line.isEmpty() || line.endsWith(":") || line.startsWith("MARK ")) {
+            currentIndex++;
+            if (currentIndex >= lines.length) {
+                robot.setCurrentIndex(currentIndex);
+                return;
+            }
+            line = lines[currentIndex].trim();
+        }
+
+        Instruction instruction = analyseurSyntaxique.getCommande(line);
+        if (instruction != null && instruction.getMotCommande() != null) {
+            boolean jumpTaken = false;
+            String cmd = instruction.getMotCommande().toUpperCase();
+            String[] args = instruction.getArguments();
+
+            switch (cmd) {
+                case "TEST":
+                    handleTest(robot, args);
+                    break;
+                case "JUMP":
+                    if (args.length > 0 && labels.containsKey(args[0])) {
+                        currentIndex = labels.get(args[0]);
+                        jumpTaken = true;
+                    }
+                    break;
+                case "FJUMP":
+                    Object tVal = robot.getCaseMemoire(1);
+                    if (tVal instanceof Integer && (Integer)tVal == 0) {
+                        if (args.length > 0 && labels.containsKey(args[0])) {
+                            currentIndex = labels.get(args[0]);
+                            jumpTaken = true;
                         }
                     }
-                }
-                currentIndex++; // Passe à la ligne suivante, sauf si JUMP/FJUMP a modifié l'index
-                final int finalIndex = currentIndex; // Pour l'utilisation dans SwingUtilities.invokeLater
-                SwingUtilities.invokeLater(() -> {
-                    gamePanel.repaint();
-                });
+                    break;
+                case "TJUMP":
+                    Object tValT = robot.getCaseMemoire(1);
+                    if (tValT instanceof Integer && (Integer)tValT != 0) {
+                        if (args.length > 0 && labels.containsKey(args[0])) {
+                            currentIndex = labels.get(args[0]);
+                            jumpTaken = true;
+                        }
+                    }
+                    break;
+                default:
+                    executeInstruction(id, instruction);
+                    break;
             }
-        }).start();
-    }
-    
-    private int adjustJumpIndex(Instruction instruction, int currentIndex, String[] lines) {
-        try {
-            int jumpIndex = Integer.parseInt(instruction.getArguments()[0]);
-            if (jumpIndex >= 0 && jumpIndex < lines.length) {
-                currentIndex = jumpIndex - 1; // -1 car il sera incrémenté après
-            } else {
-                System.out.println("Index de JUMP invalide");
+
+            if (!jumpTaken) {
+                currentIndex++;
             }
-        } catch (NumberFormatException e) {
-            System.out.println("Argument de JUMP non valide");
+        } else {
+            currentIndex++;
         }
-        return currentIndex;
+
+        robot.setCurrentIndex(currentIndex);
+        SwingUtilities.invokeLater(() -> {
+            gamePanel.repaint();
+            updateUI(robot);
+        });
     }
-private void executeInstruction(int id, Instruction instruction) {
-        String commande = instruction.getMotCommande();
+
+    private void handleTest(Robot robot, String[] args) {
+        if (args.length < 3) return;
+        try {
+            int v1 = obtenirValeur(robot, args[0]);
+            String op = args[1];
+            int v2 = obtenirValeur(robot, args[2]);
+            boolean result = false;
+            switch (op) {
+                case "=": result = (v1 == v2); break;
+                case ">": result = (v1 > v2); break;
+                case "<": result = (v1 < v2); break;
+                case "!=": result = (v1 != v2); break;
+            }
+            robot.setCaseMemoire(1, result ? 1 : 0);
+        } catch (Exception e) {
+            System.err.println("Erreur TEST: " + e.getMessage());
+        }
+    }
+
+    private int obtenirValeur(Robot r, String input) {
+        try {
+            return Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            switch (input.toUpperCase()) {
+                case "X": return (Integer) r.getCaseMemoire(0);
+                case "T": return (Integer) r.getCaseMemoire(1);
+                case "M": return (Integer) r.getRegistreM();
+                case "F":
+                    if (r.getFichierEnMain() != null) {
+                        String val = r.getFichierEnMain().retirerContenu();
+                        return val != null ? Integer.parseInt(val) : 0;
+                    }
+            }
+        }
+        return 0;
+    }
+
+    private void updateUI(Robot r) {
+        gameWindow.getTextZone().setMemoryArea1Text(String.valueOf(r.getCaseMemoire(0)));
+        gameWindow.getTextZone().setMemoryArea2Text(String.valueOf(r.getCaseMemoire(1)));
+        gameWindow.getTextZone().setMemoryArea4Text(String.valueOf(r.getRegistreM()));
+        if (r.getFichierEnMain() != null) {
+            gameWindow.getTextZone().setMemoryArea3Text("Holding: " + r.getFichierEnMain().getId());
+        } else {
+            gameWindow.getTextZone().setMemoryArea3Text("None");
+        }
+    }
+
+    private void executeInstruction(int id, Instruction instruction) {
+        String commande = instruction.getMotCommande().toUpperCase();
         String[] arguments = instruction.getArguments(); 
         
-        switch (commande.toUpperCase()) {
+        switch (commande) {
             case "LINK":
-                if (arguments.length > 0) {
-                    grille.traiterCommandeLink(id, arguments[0]); 
-                }
+                if (arguments.length > 0) grille.traiterCommandeLink(id, arguments[0]); 
                 break;
             case "GRAB":
-            int idfichier=Integer.parseInt(arguments[0]);
-                grille.GRAB(id,idfichier ); 
+                if (arguments.length > 0) grille.GRAB(id, Integer.parseInt(arguments[0])); 
                 break;
             case "DROP":
                 grille.DROP(id);
                 break;
             case "ADDI":
-                if (arguments.length == 3) {
-                    String VALEUR1 = arguments[0];
-                    String VALEUR2 = arguments[1];
-                    String destinationIndex = arguments[2];
-                    grille.add(id, VALEUR1,VALEUR2, destinationIndex,gameWindow);
-                }
+                if (arguments.length == 3) grille.add(id, arguments[0], arguments[1], arguments[2], gameWindow);
                 break;
             case "SUBI":
-            if (arguments.length == 3) {
-                String VALEUR1 = arguments[0];
-                String VALEUR2 = arguments[1];
-                String destinationIndex = arguments[2];
-                grille.sub(id, VALEUR1,VALEUR2, destinationIndex,gameWindow);
-            }
+                if (arguments.length == 3) grille.sub(id, arguments[0], arguments[1], arguments[2], gameWindow);
                 break;
             case "MULI":
-            if (arguments.length == 3) {
-                String VALEUR1 = arguments[0];
-                String VALEUR2 = arguments[1];
-                String destinationIndex = arguments[2];
-                grille.mult(id, VALEUR1,VALEUR2, destinationIndex,gameWindow);
-            }
-                break;
-            
-            case "TESTEOF":
-                grille.traiterCommandeTestEOF(id);
+                if (arguments.length == 3) grille.mult(id, arguments[0], arguments[1], arguments[2], gameWindow);
                 break;
             case "COPY":
-                if (arguments.length >= 2) {
-                    String source=arguments[0];
-                    String destination = arguments[1];
-                    grille.copy(id,source, destination,gameWindow);
-                   // memoryArea1.setText(String.valueOf(numero));
-                   
-                }
-                break;
-                case "DIVI":
-                if (arguments.length == 3) {
-                    String VALEUR1 = arguments[0];
-                    String VALEUR2 = arguments[1];
-                    String destinationIndex = arguments[2];
-                    grille.devi(id, VALEUR1,VALEUR2, destinationIndex,gameWindow);
-                }
-            break;
-            case "MODI":
-                if (arguments.length == 3) {
-                    String VALEUR1 = arguments[0];
-                    String VALEUR2 = arguments[1];
-                    String destinationIndex = arguments[2];
-                    grille.modi(id, VALEUR1,VALEUR2, destinationIndex,gameWindow);
-                }
-                    break;    
-            case "NOOP":
-                grille.NOOP();
+                if (arguments.length >= 2) grille.copy(id, arguments[0], arguments[1], gameWindow);
                 break;
             case "HALT":
-            grille.traiterCommandeHalt(id, gameWindow);
-            break;
-            default:
-                System.out.println("Commande non reconnue : " + commande);
+                grille.traiterCommandeHalt(id, gameWindow);
+                break;
+            case "NOOP":
                 break;
         }
     }
-
 }
