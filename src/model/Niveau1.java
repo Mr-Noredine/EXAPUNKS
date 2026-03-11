@@ -1,5 +1,6 @@
 package model;
 
+import java.util.List;
 
 public class Niveau1 extends Niveau {
 
@@ -46,13 +47,19 @@ public class Niveau1 extends Niveau {
         return mission;
     }
 
-    public boolean testVectoire() {
-        if ((grille.getFichierParId(200).getPosX() != 3 ) && (grille.getFichierParId(200).getPosY() != 4)) {
+    public boolean testVictoire() {
+        Fichier f200 = grille.getFichierParId(200);
+        if (f200 == null || f200.getPosX() != 3 || f200.getPosY() != 4) {
             return false;
         }
         
-        if (grille.getListeRobots().size() != 0) {
+        List<String> content = f200.getGestionFichier().getContenuCommeListe();
+        if (content.size() < 2 || !content.get(0).equals("50") || !content.get(1).equals("60")) {
             return false;
+        }
+
+        for (Robot r : grille.getListeRobots()) {
+            if (r.estActif()) return false;
         }
 
         return true;
@@ -67,13 +74,7 @@ public class Niveau1 extends Niveau {
     public void InitialiserFichierLancement() {
 
         Fichier fichier200 = new Fichier(200, 4, 0);
-        
-    
-        String[] StringFichier200 = {"MOVE", "THIS", "FILE", "TO", "THE ", "OUTBOX"};
-        for (String e : StringFichier200) {
-            fichier200.ajouterContenu(e);
-        }
-
+        fichier200.ajouterContenu("50");
         fichiersLancement.add(fichier200);
     }
 

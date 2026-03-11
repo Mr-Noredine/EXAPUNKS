@@ -50,6 +50,10 @@ public class Fichier {
         return id;
     }
 
+    public FileF getGestionFichier() {
+        return gestionFichier;
+    }
+
 
 
     public void setPosition(int newX, int newY) {

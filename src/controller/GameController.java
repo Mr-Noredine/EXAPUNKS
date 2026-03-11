@@ -3,10 +3,13 @@ package controller;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.JOptionPane;
 import model.*;
 import view.GamePanel;
 import view.GameWindow;
 import view.TextZone;
+import view.SharedSemaphore;
 
 public class GameController {
     
@@ -16,11 +19,21 @@ public class GameController {
     private AnalyseurSyntaxique analyseurSyntaxique = new AnalyseurSyntaxique();
     private Map<String, Integer> labels = new HashMap<>();
     private String currentCode = "";
+    private Timer autoTimer;
+    private int speed = 300;
+    private int networkActivity = 0;
 
     public GameController(GameWindow gameWindow, Grille grille) {
         this.grille = grille;
         this.gamePanel = gameWindow.getGamePanel();
         this.gameWindow = gameWindow;
+    }
+
+    public void setSpeed(int speed) {
+        this.speed = speed;
+        if (autoTimer != null && autoTimer.isRunning()) {
+            autoTimer.setDelay(speed);
+        }
     }
 
     private void preprocess(String code) {
@@ -40,6 +53,7 @@ public class GameController {
 
     public void executeNextStep(int id, String code) {
         preprocess(code);
+        Niveau niveau = gameWindow.getNiveau();
         Robot robot = grille.getRobotId(id);
         if (robot == null || !robot.estActif()) return;
 
@@ -119,10 +133,50 @@ public class GameController {
         }
 
         robot.setCurrentIndex(currentIndex);
+        niveau.setNbSolution(); // Increment cycles
         SwingUtilities.invokeLater(() -> {
             gamePanel.repaint();
             updateUI(robot, tz);
+            checkVictory();
         });
+    }
+
+    public void startAutoRun() {
+        if (autoTimer != null && autoTimer.isRunning()) return;
+        autoTimer = new Timer(speed, e -> {
+            SharedSemaphore.release();
+        });
+        autoTimer.start();
+    }
+
+    public void stopAutoRun() {
+        if (autoTimer != null) {
+            autoTimer.stop();
+        }
+    }
+
+    public void resetGame() {
+        stopAutoRun();
+        Niveau currentNiveau = gameWindow.getNiveau();
+        Niveau freshNiveau;
+        if (currentNiveau instanceof Niveau1) freshNiveau = new Niveau1();
+        else if (currentNiveau instanceof Niveau2) freshNiveau = new Niveau2();
+        else if (currentNiveau instanceof Niveau3) freshNiveau = new Niveau3();
+        else return;
+
+        gameWindow.afficherFenetreJeu(freshNiveau);
+    }
+
+    private void checkVictory() {
+        Niveau niveau = gameWindow.getNiveau();
+        if (niveau.testVictoire()) {
+            stopAutoRun();
+            String stats = String.format("Cycles: %d\nNetwork Activity: %d", 
+                niveau.getNbSolution(), networkActivity);
+            JOptionPane.showMessageDialog(gameWindow, "MISSION ACCOMPLISHED!\n" + stats, "Success", JOptionPane.INFORMATION_MESSAGE);
+            gameWindow.afficherOptionsNiveau();
+            gameWindow.frame2.dispose();
+        }
     }
 
     private void handleTest(Robot robot, String[] args) {
@@ -163,7 +217,10 @@ public class GameController {
         
         switch (commande) {
             case "LINK":
-                if (arguments.length > 0) grille.traiterCommandeLink(id, arguments[0]); 
+                if (arguments.length > 0) {
+                    grille.traiterCommandeLink(id, arguments[0]);
+                    networkActivity++;
+                }
                 break;
             case "GRAB":
                 if (arguments.length > 0) grille.GRAB(id, Integer.parseInt(arguments[0])); 

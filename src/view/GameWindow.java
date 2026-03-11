@@ -13,8 +13,8 @@ import java.io.IOException;
 
 public class GameWindow extends JPanel{
    
-    JFrame frame;
-    JFrame frame2;
+    public JFrame frame;
+    public JFrame frame2;
     JButton jouerButton;
     JButton parametreButton;
     JButton quitterButton;
@@ -111,6 +111,7 @@ public class GameWindow extends JPanel{
 
   
     public void afficherFenetreJeu(Niveau niveau) {
+        if (frame2 != null) frame2.dispose();
         frame2 = new JFrame("EXAPUNKS Clone - Console");
         frame2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame2.setSize(1265, 750);
@@ -182,16 +183,48 @@ public class GameWindow extends JPanel{
         
         JButton stopButton = new JButton("RESET");
         JButton avancerButton = new JButton("STEP >>");
+        JButton runAllButton = new JButton("RUN ALL ▶");
+        JButton pauseButton = new JButton("PAUSE ⏸");
         
         styleActionButton(stopButton, new Color(150, 0, 0));
         styleActionButton(avancerButton, new Color(0, 100, 200));
+        styleActionButton(runAllButton, new Color(51, 153, 51));
+        styleActionButton(pauseButton, new Color(200, 150, 0));
+        
+        // Speed Slider
+        JSlider speedSlider = new JSlider(JSlider.HORIZONTAL, 50, 1000, 300);
+        speedSlider.setOpaque(false);
+        speedSlider.setInverted(true); // Left is fast, right is slow
+        JLabel speedLabel = new JLabel("SPEED");
+        speedLabel.setForeground(Color.WHITE);
+        speedLabel.setFont(new Font("Monospaced", Font.BOLD, 12));
         
         buttonPanel.add(stopButton);
         buttonPanel.add(avancerButton);
-        container.add(buttonPanel, BorderLayout.SOUTH);
+        buttonPanel.add(runAllButton);
+        buttonPanel.add(pauseButton);
         
-        stopButton.addActionListener(e -> textZone.reinitialiserJeu());
+        JPanel sliderPanel = new JPanel(new FlowLayout());
+        sliderPanel.setOpaque(false);
+        sliderPanel.add(speedLabel);
+        sliderPanel.add(speedSlider);
+        
+        container.add(buttonPanel, BorderLayout.SOUTH);
+        container.add(sliderPanel, BorderLayout.NORTH);
+        
+        stopButton.addActionListener(e -> {
+            if (controller != null) controller.getGameController().resetGame();
+        });
         avancerButton.addActionListener(e -> SharedSemaphore.release());
+        runAllButton.addActionListener(e -> {
+            if (controller != null) controller.getGameController().startAutoRun();
+        });
+        pauseButton.addActionListener(e -> {
+            if (controller != null) controller.getGameController().stopAutoRun();
+        });
+        speedSlider.addChangeListener(e -> {
+            if (controller != null) controller.getGameController().setSpeed(speedSlider.getValue());
+        });
         
         if (niveau instanceof Niveau3) {
             textZone2 = new TextZone();
@@ -231,12 +264,17 @@ public class GameWindow extends JPanel{
         gamePanel.paintComponent(g);
       
     }
+public GamePanel getGamePanel() {
+    return gamePanel;
+}
 
-    public GamePanel getGamePanel() {
-        return gamePanel;
+public Controller getController() {
+    return controller;
+}
+
+    public Niveau getNiveau() {
+        return niveau;
     }
-   
-
 
     public void afficherOptionsNiveau() {
         JFrame niveauFrame = new JFrame("Choix du Niveau");

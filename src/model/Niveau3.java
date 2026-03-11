@@ -2,6 +2,8 @@ package model;
 
 import java.util.ArrayList;
 
+import java.util.List;
+
 public class Niveau3 extends Niveau {
 
 
@@ -27,12 +29,6 @@ public class Niveau3 extends Niveau {
             {TypeTerritoire.LIBRE, TypeTerritoire.PORTE5, TypeTerritoire.OCCUPE, TypeTerritoire.PORTE4, TypeTerritoire.LIBRE}
         };
         grille = new Grille(robotsLancement, fichiersLancement, layout);
-        for (Fichier fichier : fichiersLancement) {
-            if (fichier.getId() == 199) {
-                fichier.afficherContenu();
-                break; 
-            }
-        }
     }
 
 
@@ -43,25 +39,20 @@ public class Niveau3 extends Niveau {
     }
 
     public String getDescription() {
-        String description = " File 199 contains exactly two values: a Keyword and a number. "
-        + "Create a new file in the OUTBOX and copy those two values to it, swapping their order" +
-        " so that the nubmer is first. \n When you are finished, delete file 199.";
-
-        return description;
+        return "Filter values > 100 from file 199 and send them to OUTBOX.";
     }
 
     public String getMission() {
-        String mission = " -> Create the specified file in the OUTBOX.\n";
-        mission += "-> Delete file 199.";
-        mission += "-> Leave no trace";
-
-        return mission;
+        return "-> Read file 199 (at 0,4)\n-> Filter values > 100\n-> Write them to a new file in OUTBOX";
     }
 
-    public boolean testVectoire() {
-        // tester si le dernier element de fichier est egale a 436 
+    public boolean testVictoire() {
+        Fichier outbox = grille.getFichier(3, 4);
+        if (outbox == null) return false;
         
-        if (!grille.contientFichier(3, 4)) {
+        List<String> content = outbox.getGestionFichier().getContenuCommeListe();
+        // Values > 100 from {50, 120, 80, 200} should be {120, 200}
+        if (content.size() < 2 || !content.get(0).equals("120") || !content.get(1).equals("200")) {
             return false;
         }
         
@@ -69,14 +60,9 @@ public class Niveau3 extends Niveau {
             return false;
         }
         
-        if (grille.getListeRobots().size() != 0) {
-            return false;
+        for (Robot r : grille.getListeRobots()) {
+            if (r.estActif()) return false;
         }
-        Fichier file = grille.getFichier(3, 4);
-       // ArrayList<String> list = file.contenuList();
-       // if ((list.get(1) != "ECHO") && (Integer.valueOf((list.get(0))) != 9780)){
-         //   return false;
-       // }
         return true;
     }
 
@@ -84,7 +70,7 @@ public class Niveau3 extends Niveau {
       
         Fichier fichier199 = new Fichier(199, 0, 4);
     
-        String[] contenuFichier199 = {"ECHO", "9780"};
+        String[] contenuFichier199 = {"50", "120", "80", "200"};
         for (String e : contenuFichier199) {
             fichier199.ajouterContenu(e);
         }

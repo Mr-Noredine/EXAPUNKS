@@ -51,5 +51,9 @@ public class Controller implements Runnable {
         gameWindow.repaint();
     }
 
+    public GameController getGameController() {
+        return gameController;
+    }
+
     
 }

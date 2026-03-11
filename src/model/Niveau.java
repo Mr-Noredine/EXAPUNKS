@@ -58,7 +58,7 @@ public abstract class Niveau{
     public abstract int getNbRobot();
     public abstract String getDescription();
     public abstract String getMission();
-    public abstract boolean testVectoire();
+    public abstract boolean testVictoire();
     
     public int getTargetX() { return 3; }
     public int getTargetY() { return 4; }

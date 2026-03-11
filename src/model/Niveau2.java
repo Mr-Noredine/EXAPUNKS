@@ -1,6 +1,8 @@
 package model;
 
 
+import java.util.List;
+
 public class Niveau2 extends Niveau {
 
 
@@ -26,43 +28,33 @@ public class Niveau2 extends Niveau {
             {TypeTerritoire.PORTE5, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.PORTE4}
         };
         grille = new Grille(robotsLancement, fichiersLancement, layout);
-        for (Fichier fichier : fichiersLancement) {
-            if (fichier.getId() == 200) {
-                fichier.afficherContenu();
-                break; 
-            }
-        }
     }
 
     public String getDescription() {
-        String description = " Add the first two values of file 200, "
-        + "multiply the result by the third value, and then substract the fourth value. \n" +
-        " Append the result to the end of the file and then move it to the OUTBOX.";
-
-        return description;
+        return "Collect values from 3 hosts and sum them into a file in the OUTBOX.";
     }
 
     public String getMission() {
-        String mission = " -> Append the correct value to the end of file 200.\n";
-        mission += "-> Move file 200 to the OUTBOX";
-        mission += "-> Leave no trace";
-
-        return mission;
+        return "-> Collect 10, 20, 30 from files\n-> Sum them and write 60 to a file\n-> Move result to OUTBOX";
     }
 
-    public boolean testVectoire() {
-        // tester si le dernier element de fichier est egale a 436 
-        Fichier file200 = grille.getFichierParId(200);
-       // if (Integer.valueOf(file200.dernierElem()) != 436) {
-        //    return false;
-      //  }
-
-        if ((file200.getPosX() != 3) && (file200.getPosY() != 4)) {
-            return false;
-        }
+    public boolean testVictoire() {
+        Fichier outbox = grille.getFichier(3, 4);
+        if (outbox == null) return false;
         
-        if (grille.getListeRobots().size() != 0) {
-            return false;
+        List<String> content = outbox.getGestionFichier().getContenuCommeListe();
+        // Check if sum 60 is present
+        boolean found60 = false;
+        for (String s : content) {
+            if (s.equals("60")) {
+                found60 = true;
+                break;
+            }
+        }
+        if (!found60) return false;
+
+        for (Robot r : grille.getListeRobots()) {
+            if (r.estActif()) return false;
         }
 
         return true;
@@ -74,15 +66,16 @@ public class Niveau2 extends Niveau {
 
 
     public void InitialiserFichierLancement() {
-      
-        Fichier fichier200 = new Fichier(200, 4, 0);
-    
-        int[] entiersPourFichier200 = {72, 52, 4, 60};
-        for (int entier : entiersPourFichier200) {
-            fichier200.ajouterContenu(String.valueOf(entier));
-        }
-
-        fichiersLancement.add(fichier200);
+        Fichier f1 = new Fichier(200, 4, 0);
+        f1.ajouterContenu("10");
+        Fichier f2 = new Fichier(201, 0, 4);
+        f2.ajouterContenu("20");
+        Fichier f3 = new Fichier(202, 4, 4);
+        f3.ajouterContenu("30");
+        
+        fichiersLancement.add(f1);
+        fichiersLancement.add(f2);
+        fichiersLancement.add(f3);
     }
 
 
