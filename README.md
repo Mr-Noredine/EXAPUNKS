@@ -1,76 +1,178 @@
-# EXAPUNKS Clone - Projet L2 Informatique
+# EXAPUNKS Clone
 
-Ce dépôt contient un clone du jeu **Exapunks**, une simulation de hacking basée sur des puzzles, réalisé dans le cadre d'un cours de développement logiciel en 2ème année de Licence Informatique à l'Université Sorbonne Paris Nord.
+> Clone du jeu de hacking **EXAPUNKS** — agents programmables, manipulation de fichiers, puzzles en assemblage.
+> Projet L2 Informatique · Université Sorbonne Paris Nord · Java Swing · Architecture MVC
 
-## Description du Projet
+---
 
-L'objectif était de reproduire les mécanismes de jeu d'Exapunks : contrôler des agents (EXAs) via un langage d'assemblage simplifié pour manipuler des fichiers, naviguer dans des réseaux et résoudre des énigmes. Le projet utilise Java Swing pour l'interface graphique.
+## Aperçu
 
-## Installation et Utilisation
+EXAPUNKS Clone met le joueur aux commandes de robots (EXAs) qu'il programme dans un langage d'assemblage simplifié. Les robots naviguent sur une grille 5×5, ramassent et manipulent des fichiers, calculent des résultats et les déposent dans une zone cible (OUTBOX) pour valider chaque mission.
 
-### Prérequis
-- Java Development Kit (JDK) 17 ou supérieur.
+**7 niveaux** progressifs, de *Moyen* à *Ultime*, incluant des missions de calcul, de navigation, de logique conditionnelle et de coordination multi-robots.
 
-### Compilation
-Depuis la racine du projet, créez un dossier `bin` et compilez les fichiers source :
+---
+
+## Prérequis
+
+- **JDK 17** ou supérieur
+
+---
+
+## Installation et lancement
+
 ```bash
+# 1. Compiler
 mkdir -p bin
 javac -d bin -sourcepath src src/controller/Main.java
-```
 
-### Lancement du Jeu
-Pour lancer l'application graphique :
-```bash
+# 2. Lancer le jeu
 java -cp bin controller.Main
 ```
 
-Pour tester la partie textuelle (interpréteur de commandes seul) :
-```bash
-java -cp bin main.TestPartieTextuelle
+---
+
+## Interface de jeu
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ÉDITEUR DE CODE      │        GRILLE 5×5          │  FICHIERS  │
+│  ┌──────────┬──────┐  │  ┌───┬───┬───┬───┬───┐    │  ┌─ F200   │
+│  │ Code EXA │  X   │  │  │   │   │   │   │ R │    │  │  10     │
+│  │          │  T   │  │  ├───┼───┼───┼───┼───┤    │  │  25     │
+│  │          │  F   │  │  │   │░░░│   │░░░│   │    │  └──────── │
+│  │          │  M   │  │  └───┴───┴───┴───┴───┘    │            │
+│  └──────────┴──────┘  │                            │            │
+│  [RESET][STEP][RUN][PAUSE][QUIT]   DÉLAI: 300ms    │            │
+├───────────────────────────────────────────────────────────────  │
+│  [ → ] STEP   [ ESPACE ] RUN   [ P ] PAUSE   [ R ] RESET        │
+│  OBJECTIF : Lire F200 | Calculer 10 + 25 | Déposer en OUTBOX   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Comment Jouer
+| Zone | Rôle |
+|---|---|
+| **Éditeur** | Saisir les instructions EXA du robot |
+| **Registres X T F M** | Valeurs en temps réel |
+| **Grille** | Visualisation des robots, fichiers, portails, OUTBOX |
+| **Panneau FILES** | Contenu de chaque fichier mis à jour en live |
+| **Barre du bas** | Raccourcis clavier + objectif de la mission |
 
-1. **Lancement** : Cliquez sur "Jouer" dans le menu principal, puis choisissez un niveau (Niveau 1, 2 ou 3).
-2. **Interface** :
-   - **Zone de Texte** : Saisissez vos instructions dans le champ de texte à gauche.
-   - **Mémoire (X, T, M)** : Visualisez l'état des registres de votre robot.
-   - **Grille** : Observez les déplacements du robot et la position des fichiers.
-3. **Contrôles** :
-   - Cliquez sur **"Avancer"** pour exécuter les instructions ligne par ligne.
-   - Cliquez sur **"Stop"** pour réinitialiser le niveau.
+---
 
-### Instructions de Base (Langage EXA)
+## Raccourcis clavier
 
-| Commande | Usage | Description |
-| :--- | :--- | :--- |
-| `LINK` | `LINK <dir/id>` | Déplace le robot (directions : left, right, up, down). |
-| `COPY` | `COPY <src> <dest>` | Copie une valeur dans un registre (X, T) ou un fichier (F). |
-| `GRAB` | `GRAB <id_fichier>` | Ramasse un fichier présent sur la case. |
-| `DROP` | `DROP` | Dépose le fichier tenu. |
-| `ADDI` | `ADDI <v1> <v2> <d>` | Additionne v1 et v2, stocke dans d. |
-| `TEST` | `TEST X != 0` | Compare une valeur et met à jour le registre T (Vrai/Faux). |
-| `JUMP` | `JUMP <ligne>` | Saute à une ligne spécifique du code. |
-| `HALT` | `HALT` | Arrête l'exécution et retire le robot de la grille. |
+| Touche | Action |
+|---|---|
+| `Ctrl + →` | Exécuter une instruction (STEP) |
+| `Ctrl + Entrée` | Lancer l'exécution automatique (RUN) |
+| `Ctrl + P` | Mettre en pause |
+| `Ctrl + R` | Réinitialiser le niveau |
+
+---
+
+## Langage EXA — Référence complète
+
+### Déplacement
+
+| Instruction | Syntaxe | Description |
+|---|---|---|
+| `LINK` | `LINK left/right/up/down` | Déplace le robot d'une case |
+
+> Les portails (PORTE2↔PORTE5, PORTE3↔PORTE4) téléportent instantanément le robot au portail jumeau.
+
+### Fichiers
+
+| Instruction | Syntaxe | Description |
+|---|---|---|
+| `GRAB` | `GRAB <id>` | Ramasse le fichier `id` sur la case courante |
+| `DROP` | `DROP` | Dépose le fichier tenu sur la case courante |
+
+> `COPY F X` — lit et **supprime** la première valeur du fichier tenu → stocke dans X
+> `COPY X F` — **ajoute** la valeur de X à la fin du fichier tenu
 
 ### Registres
-- **X** : Registre de calcul général.
-- **T** : Utilisé pour les tests et les sauts conditionnels (`FJUMP`).
-- **F** : Accès au contenu du fichier actuellement tenu (lecture/écriture).
 
-## Contributions
+| Registre | Rôle |
+|---|---|
+| `X` | Registre de calcul général |
+| `T` | Résultat des tests (`1` = vrai, `0` = faux) |
+| `F` | Accès au fichier tenu (lecture/écriture) |
+| `M` | Registre partagé entre robots (communication) |
 
-Le projet a été réalisé par une équipe de **7 personnes**. En tant que coordinateur, j'ai veillé à la répartition des tâches, au respect des délais et à la fluidité de la communication.
+### Calcul
 
-## Organisation du Code
+| Instruction | Syntaxe | Description |
+|---|---|---|
+| `ADDI` | `ADDI v1 v2 dest` | `dest = v1 + v2` |
+| `SUBI` | `SUBI v1 v2 dest` | `dest = v1 - v2` |
+| `MULI` | `MULI v1 v2 dest` | `dest = v1 × v2` |
+| `DIVI` | `DIVI v1 v2 dest` | `dest = v1 ÷ v2` (entier) |
+| `MODI` | `MODI v1 v2 dest` | `dest = v1 mod v2` |
 
-Le code suit le pattern **MVC (Modèle-Vue-Contrôleur)** :
-- `src/model/` : Logique métier (Robot, Grille, Instructions, Niveaux).
-- `src/view/` : Interface graphique (Swing, Panneaux, Fenêtres).
-- `src/controller/` : Gestion des événements et exécution des commandes.
+> `v1`, `v2` peuvent être un registre (`X`, `T`, `M`, `F`) ou un entier littéral.
 
-Le code source complet et l'historique sont disponibles sur le GitLab de l'université : [Lien GitLab](https://gitlab.sorbonne-paris-nord.fr/12209923/exapunks.git).
+### Contrôle du flux
 
-## Remerciements
+| Instruction | Syntaxe | Description |
+|---|---|---|
+| `TEST` | `TEST v1 op v2` | Compare v1 et v2 (`=`, `!=`, `>`, `<`, `>=`, `<=`), résultat dans T |
+| `JUMP` | `JUMP label` | Saut inconditionnel |
+| `FJUMP` | `FJUMP label` | Saut si T = 0 (faux) |
+| `TJUMP` | `TJUMP label` | Saut si T ≠ 0 (vrai) |
+| `MARK` | `MARK label` | Définit un label (ou `label:`) |
+| `NOOP` | `NOOP` | Ne fait rien (attend un cycle) |
+| `HALT` | `HALT` | Arrête le robot et le retire de la grille |
 
-Merci à toute l'équipe pour son dévouement et son travail acharné sur ce projet.
+---
+
+## Les 7 niveaux
+
+| # | Difficulté | Mission | Mécanique principale |
+|---|---|---|---|
+| 1 | 🟡 MOYEN | Additionner 10 + 25 = **35** | `ADDI`, navigation simple |
+| 2 | 🟠 RÉFLÉCHIR | Multiplier 6 × 4 = **24** | `MULI`, navigation corridors |
+| 3 | 🔴 DIFFICILE | Si F[0] > F[1] → différence, sinon 0 | `TEST`, `FJUMP`, `SUBI` |
+| 4 | 🟣 AVANCÉ | Produit 5 × 9 = **45** (deux fichiers) | Deux fichiers, `MULI X F X` |
+| 5 | ⚫ EXPERT | Sommer 4 valeurs = **30** | Lectures multiples, `ADDI` |
+| 6 | 🔵 MASTER | 72 ÷ 8 = **9** | `DIVI`, navigation labyrinthique |
+| 7 | ⭐ ULTIME | Deux robots, coordination M, 11+7 = **18** | 2 robots, `NOOP`, registre `M` |
+
+> Les solutions complètes sont disponibles dans [`SOLUTIONS.md`](SOLUTIONS.md).
+
+---
+
+## Architecture du code
+
+```
+src/
+├── controller/
+│   ├── Main.java              Point d'entrée
+│   └── GameController.java    Exécution des instructions EXA
+├── model/
+│   ├── Grille.java            Grille de jeu, portails, GRAB/DROP
+│   ├── Robot.java             Agent EXA (registres X, T, M, fichier)
+│   ├── Fichier.java           Fichier FIFO
+│   ├── Niveau.java            Classe abstraite des niveaux
+│   ├── Niveau1..7.java        7 niveaux concrets
+│   ├── AnalyseurSyntaxique.java  Parseur d'instructions
+│   └── Instruction.java       Représentation d'une instruction
+└── view/
+    ├── GameWindow.java        Fenêtre principale, écrans boot/menu/jeu
+    ├── GamePanel.java         Rendu graphique de la grille (dynamique)
+    ├── TextZone.java          Éditeur de code + registres
+    ├── Controller.java        Thread de jeu, synchronisation
+    ├── WinScreen.java         Écran de victoire
+    └── DefeatScreen.java      Écran d'échec
+```
+
+Le projet suit le pattern **MVC** :
+- **Modèle** (`model/`) — logique métier pure, indépendante de l'affichage
+- **Vue** (`view/`) — interface Swing, rendu dynamique adaptatif
+- **Contrôleur** (`controller/`) — pont entre vue et modèle, thread séparé pour ne pas bloquer l'EDT
+
+---
+
+## Équipe
+
+Projet réalisé par une équipe de **7 personnes** — L2 Informatique, Université Sorbonne Paris Nord.

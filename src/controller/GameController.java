@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.JOptionPane;
 import model.*;
 import view.GamePanel;
 import view.GameWindow;
@@ -22,6 +21,10 @@ public class GameController {
     private Timer autoTimer;
     private int speed = 300;
     private int networkActivity = 0;
+    /** Prevents the win screen from being shown more than once per session. */
+    private boolean victoryShown = false;
+    /** Prevents the defeat screen from being shown more than once per session. */
+    private boolean defeatShown = false;
 
     public GameController(GameWindow gameWindow, Grille grille) {
         this.grille = grille;
@@ -57,14 +60,16 @@ public class GameController {
         Robot robot = grille.getRobotId(id);
         if (robot == null || !robot.estActif()) return;
 
-        TextZone tz = (id == 2 && gameWindow.getTextZone2() != null) ? gameWindow.getTextZone2() : gameWindow.getTextZone();
+        TextZone tz = (id == 2 && gameWindow.getTextZone2() != null)
+                ? gameWindow.getTextZone2()
+                : gameWindow.getTextZone();
 
         String[] lines = code.split("\n");
         int currentIndex = robot.getCurrentIndex();
 
         if (currentIndex >= lines.length) {
             System.out.println("Fin du programme pour le robot " + id);
-            tz.highlightLine(-1); // Remove highlight
+            tz.highlightLine(-1);
             return;
         }
 
@@ -79,7 +84,7 @@ public class GameController {
             }
             line = lines[currentIndex].trim();
         }
-        
+
         // Persist the index after skipping
         robot.setCurrentIndex(currentIndex);
 
@@ -87,48 +92,54 @@ public class GameController {
         tz.highlightLine(currentIndex);
 
         Instruction instruction = analyseurSyntaxique.getCommande(line);
-        if (instruction != null && instruction.getMotCommande() != null) {
-            boolean jumpTaken = false;
-            String cmd = instruction.getMotCommande().toUpperCase();
-            String[] args = instruction.getArguments();
+        if (instruction == null || instruction.getMotCommande() == null) {
+            // Unknown / unrecognised instruction — trigger defeat
+            final String badLine = line;
+            SwingUtilities.invokeLater(() -> {
+                gamePanel.repaint();
+                triggerDefeat("Instruction inconnue : \"" + badLine + "\"");
+            });
+            return;
+        }
 
-            switch (cmd) {
-                case "TEST":
-                    handleTest(robot, args);
-                    break;
-                case "JUMP":
+        boolean jumpTaken = false;
+        String cmd  = instruction.getMotCommande().toUpperCase();
+        String[] args = instruction.getArguments();
+
+        switch (cmd) {
+            case "TEST":
+                handleTest(robot, args);
+                break;
+            case "JUMP":
+                if (args.length > 0 && labels.containsKey(args[0])) {
+                    currentIndex = labels.get(args[0]);
+                    jumpTaken = true;
+                }
+                break;
+            case "FJUMP":
+                Object tVal = robot.getCaseMemoire(1);
+                if (tVal instanceof Integer && (Integer) tVal == 0) {
                     if (args.length > 0 && labels.containsKey(args[0])) {
                         currentIndex = labels.get(args[0]);
                         jumpTaken = true;
                     }
-                    break;
-                case "FJUMP":
-                    Object tVal = robot.getCaseMemoire(1);
-                    if (tVal instanceof Integer && (Integer)tVal == 0) {
-                        if (args.length > 0 && labels.containsKey(args[0])) {
-                            currentIndex = labels.get(args[0]);
-                            jumpTaken = true;
-                        }
+                }
+                break;
+            case "TJUMP":
+                Object tValT = robot.getCaseMemoire(1);
+                if (tValT instanceof Integer && (Integer) tValT != 0) {
+                    if (args.length > 0 && labels.containsKey(args[0])) {
+                        currentIndex = labels.get(args[0]);
+                        jumpTaken = true;
                     }
-                    break;
-                case "TJUMP":
-                    Object tValT = robot.getCaseMemoire(1);
-                    if (tValT instanceof Integer && (Integer)tValT != 0) {
-                        if (args.length > 0 && labels.containsKey(args[0])) {
-                            currentIndex = labels.get(args[0]);
-                            jumpTaken = true;
-                        }
-                    }
-                    break;
-                default:
-                    executeInstruction(id, instruction);
-                    break;
-            }
+                }
+                break;
+            default:
+                executeInstruction(id, instruction);
+                break;
+        }
 
-            if (!jumpTaken) {
-                currentIndex++;
-            }
-        } else {
+        if (!jumpTaken) {
             currentIndex++;
         }
 
@@ -137,6 +148,7 @@ public class GameController {
         SwingUtilities.invokeLater(() -> {
             gamePanel.repaint();
             updateUI(robot, tz);
+            gameWindow.refreshFileContents();
             checkVictory();
         });
     }
@@ -155,28 +167,43 @@ public class GameController {
         }
     }
 
+    /** Called when an unrecoverable error occurs. Shows the defeat screen once. */
+    private void triggerDefeat(String reason) {
+        if (defeatShown || victoryShown) return;
+        defeatShown = true;
+        stopAutoRun();
+        gameWindow.showDefeatScreen(reason);
+    }
+
     public void resetGame() {
         stopAutoRun();
+        victoryShown = false;               // allow winning again after a reset
+        defeatShown = false;                // allow defeat screen again after a reset
+        networkActivity = 0;
         Niveau currentNiveau = gameWindow.getNiveau();
         Niveau freshNiveau;
         if (currentNiveau instanceof Niveau1) freshNiveau = new Niveau1();
         else if (currentNiveau instanceof Niveau2) freshNiveau = new Niveau2();
         else if (currentNiveau instanceof Niveau3) freshNiveau = new Niveau3();
+        else if (currentNiveau instanceof Niveau4) freshNiveau = new Niveau4();
+        else if (currentNiveau instanceof Niveau5) freshNiveau = new Niveau5();
+        else if (currentNiveau instanceof Niveau6) freshNiveau = new Niveau6();
+        else if (currentNiveau instanceof Niveau7) freshNiveau = new Niveau7();
         else return;
 
         gameWindow.afficherFenetreJeu(freshNiveau);
     }
 
     private void checkVictory() {
+        if (victoryShown) return;           // guard: show the screen only once
         Niveau niveau = gameWindow.getNiveau();
+        if (niveau == null) return;
         if (niveau.testVictoire()) {
+            victoryShown = true;
             stopAutoRun();
             int totalSize = calculateTotalSize();
-            String stats = String.format("Cycles: %d\nCode Size: %d\nNetwork Activity: %d", 
-                niveau.getNbSolution(), totalSize, networkActivity);
-            JOptionPane.showMessageDialog(gameWindow, "MISSION ACCOMPLISHED!\n" + stats, "Success", JOptionPane.INFORMATION_MESSAGE);
-            gameWindow.afficherOptionsNiveau();
-            gameWindow.frame2.dispose();
+            // Show the styled WinScreen dialog on the EDT (we are already on it via invokeLater)
+            gameWindow.showWinScreen(niveau.getNbSolution(), totalSize, networkActivity);
         }
     }
 
@@ -258,6 +285,12 @@ public class GameController {
                 break;
             case "MULI":
                 if (arguments.length == 3) grille.mult(id, arguments[0], arguments[1], arguments[2], gameWindow);
+                break;
+            case "DIVI":
+                if (arguments.length == 3) grille.devi(id, arguments[0], arguments[1], arguments[2], gameWindow);
+                break;
+            case "MODI":
+                if (arguments.length == 3) grille.modi(id, arguments[0], arguments[1], arguments[2], gameWindow);
                 break;
             case "COPY":
                 if (arguments.length >= 2) grille.copy(id, arguments[0], arguments[1], gameWindow);

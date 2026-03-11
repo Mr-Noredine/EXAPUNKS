@@ -2,15 +2,15 @@ package model;
 
 import java.util.List;
 
-public class Niveau3 extends Niveau {
+public class Niveau7 extends Niveau {
 
     private int nbNiveau;
     private int nbRobot;
 
-    public Niveau3() {
+    public Niveau7() {
         super();
-        this.nbRobot = 1;
-        this.nbNiveau = 3;
+        this.nbRobot = 2;
+        this.nbNiveau = 7;
 
         ajouterSolution();
         InitialiserFichierLancement();
@@ -18,9 +18,9 @@ public class Niveau3 extends Niveau {
 
         TypeTerritoire[][] layout = {
             {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
             {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE}
         };
         grille = new Grille(robotsLancement, fichiersLancement, layout);
@@ -28,25 +28,27 @@ public class Niveau3 extends Niveau {
 
     @Override
     public String getDescription() {
-        return "Soustraction conditionnelle : si F200[0] > F200[1] ecrire la difference, sinon ecrire 0.";
+        return "Deux robots coordonnes via M : Robot1 lit F200 (11), Robot2 lit F201 (7), somme = 18.";
     }
 
     @Override
     public String getMission() {
-        return "-> Si F200[0] > F200[1] : ecrire difference | Sinon : ecrire 0 | OUTBOX (2,4)";
+        return "-> 2 robots | Robot1 lit F200, envoie via M | Robot2 lit F201, recoit M, somme = 18";
     }
 
     @Override
     public boolean testVictoire() {
-        Fichier f200 = grille.getFichierParId(200);
-        if (f200 == null || f200.getPosX() != 2 || f200.getPosY() != 4) {
+        Fichier f201 = grille.getFichierParId(201);
+        if (f201 == null || f201.getPosX() != 2 || f201.getPosY() != 4) {
             return false;
         }
 
-        List<String> content = f200.getGestionFichier().getContenuCommeListe();
-        if (content.isEmpty() || !content.get(0).equals("7")) {
-            return false;
+        List<String> content = f201.getGestionFichier().getContenuCommeListe();
+        boolean found = false;
+        for (String s : content) {
+            if (s.equals("18")) { found = true; break; }
         }
+        if (!found) return false;
 
         for (Robot r : grille.getListeRobots()) {
             if (r.estActif()) return false;
@@ -60,13 +62,17 @@ public class Niveau3 extends Niveau {
 
         public void InitialiserFichierLancement() {
         Fichier fichier200 = new Fichier(200, 4, 0);
-        fichier200.ajouterContenu("15");
-        fichier200.ajouterContenu("8");
+        fichier200.ajouterContenu("11");
         fichiersLancement.add(fichier200);
+
+        Fichier fichier201 = new Fichier(201, 4, 4);
+        fichier201.ajouterContenu("7");
+        fichiersLancement.add(fichier201);
     }
 
         public void InitialiserRobotLancement() {
         robotsLancement.add(new Robot(1, 0, 0));
+        robotsLancement.add(new Robot(2, 0, 4));
     }
 
     @Override

@@ -1,108 +1,87 @@
 package model;
 
-
 import java.util.List;
 
 public class Niveau2 extends Niveau {
 
-
     private int nbNiveau;
-    private int  nbRobot;
-    private int nbSolutions;
+    private int nbRobot;
 
     public Niveau2() {
         super();
-        this.nbSolutions = 0;
         this.nbRobot = 1;
         this.nbNiveau = 2;
-        
+
         ajouterSolution();
         InitialiserFichierLancement();
         InitialiserRobotLancement();
-        
+
         TypeTerritoire[][] layout = {
             {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.PORTE2, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.PORTE3, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE},
+            {TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE},
             {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE},
-            {TypeTerritoire.PORTE5, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.PORTE4}
+            {TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE, TypeTerritoire.LIBRE, TypeTerritoire.OCCUPE},
+            {TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE, TypeTerritoire.LIBRE}
         };
         grille = new Grille(robotsLancement, fichiersLancement, layout);
     }
 
+    @Override
     public String getDescription() {
-        return "Collect values from 3 hosts and sum them into a file in the OUTBOX.";
+        return "Quadrupler la valeur de F200 et deposer le resultat en OUTBOX.";
     }
 
+    @Override
     public String getMission() {
-        return "-> Collect 10, 20, 30 from files\n-> Sum them and write 60 to a file\n-> Move result to OUTBOX";
+        return "-> Robot en (4,0) | Atteindre F200 (0,4) | Multiplier par 4 | OUTBOX (4,4)";
     }
 
+    @Override
     public boolean testVictoire() {
-        Fichier outbox = grille.getFichier(3, 4);
-        if (outbox == null) return false;
-        
-        List<String> content = outbox.getGestionFichier().getContenuCommeListe();
-        // Check if sum 60 is present
-        boolean found60 = false;
-        for (String s : content) {
-            if (s.equals("60")) {
-                found60 = true;
-                break;
-            }
+        Fichier f200 = grille.getFichierParId(200);
+        if (f200 == null || f200.getPosX() != 4 || f200.getPosY() != 4) {
+            return false;
         }
-        if (!found60) return false;
+
+        List<String> content = f200.getGestionFichier().getContenuCommeListe();
+        boolean found = false;
+        for (String s : content) {
+            if (s.equals("24")) { found = true; break; }
+        }
+        if (!found) return false;
 
         for (Robot r : grille.getListeRobots()) {
             if (r.estActif()) return false;
         }
-
         return true;
     }
 
-    public void ajouterSolution() {
-    
+        public void ajouterSolution() {
+        // no predefined solution
     }
 
-
-    public void InitialiserFichierLancement() {
-        Fichier f1 = new Fichier(200, 4, 0);
-        f1.ajouterContenu("10");
-        Fichier f2 = new Fichier(201, 0, 4);
-        f2.ajouterContenu("20");
-        Fichier f3 = new Fichier(202, 4, 4);
-        f3.ajouterContenu("30");
-        
-        fichiersLancement.add(f1);
-        fichiersLancement.add(f2);
-        fichiersLancement.add(f3);
+        public void InitialiserFichierLancement() {
+        Fichier fichier200 = new Fichier(200, 0, 4);
+        fichier200.ajouterContenu("6");
+        fichiersLancement.add(fichier200);
     }
 
-
-    public void InitialiserRobotLancement() {
-        robotsLancement.add(new Robot(1, 0, 0));  
-    
-        
-    }
-
-
-    @Override
-    public int getNbSolution() {
-        return nbSolutions;
+        public void InitialiserRobotLancement() {
+        robotsLancement.add(new Robot(1, 4, 0));
     }
 
     @Override
-    public int getNbNiveau() {
-        return nbNiveau;
-    }
+    public int getTargetX() { return 4; }
 
     @Override
-    public int getNbRobot() {
-        return nbRobot;
-    }
+    public int getTargetY() { return 4; }
 
-    public void setNbSolution(int nb) {
-        nbSolutions = nb;
-    }
-    
+    @Override
+    public int getNbSolution() { return nbSolutions; }
+
+    @Override
+    public int getNbNiveau() { return nbNiveau; }
+
+    @Override
+    public int getNbRobot() { return nbRobot; }
 }

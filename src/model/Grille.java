@@ -347,14 +347,17 @@ public class Grille {
     
         int x = r.getPositionX();
         int y = r.getPositionY();
-    
+
         if (!estZoneAccessible(x, y) || estPorteNumerotee(x, y)) {
             System.out.println("Le robot ne peut pas déposer de fichier sur cette case.");
             return;
         }
 
-        ajouterFichier(fichier, x, y);
-        r.setFichierEnMain(null); 
+        // Restore the file's position and cell reference without re-adding to the list
+        // (the file was never removed from 'fichiers' list by GRAB — only from the Case)
+        fichier.setPosition(x, y);
+        cases[x][y].setFichier(fichier);
+        r.setFichierEnMain(null);
         fichier.setEstTenuParRobot(false);
         System.out.println("Le fichier a été déposé sur la case (" + x + ", " + y + ").");
     }
@@ -655,14 +658,9 @@ public class Grille {
 }
    /////////////commande NOOP////////////////
     public void NOOP() {
-    try {
-        // Attend pendant une durée définie, par exemple 1000 millisecondes (1 seconde)
-        Thread.sleep(1000);
-    } catch (InterruptedException e) {
-        Thread.currentThread().interrupt(); // Restaure l'état d'interruption
-        System.err.println("Le thread a été interrompu pendant l'attente de NOOP");
+        // No-operation: consumes one cycle without side effects.
+        // Do NOT sleep here — the speed delay is managed by the auto-run timer.
     }
-}
     //////////////////Commande HALT/////////////////////
     public void traiterCommandeHalt(int id,GameWindow window) {
     Robot r = getRobotId(id);

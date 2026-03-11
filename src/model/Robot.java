@@ -21,7 +21,9 @@ public class Robot {
 
       
         casesMemoire = new Object[2]; //supposons que l'indice 0 c'est la memoire X et l'autre c'est la memoire T
-        registreM = null;
+        casesMemoire[0] = 0;  // X register initialised to 0
+        casesMemoire[1] = 0;  // T register initialised to 0
+        registreM = 0;        // M register initialised to 0
     }
    
     public Object getCaseMemoire(int indice) {
