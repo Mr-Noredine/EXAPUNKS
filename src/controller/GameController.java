@@ -171,12 +171,34 @@ public class GameController {
         Niveau niveau = gameWindow.getNiveau();
         if (niveau.testVictoire()) {
             stopAutoRun();
-            String stats = String.format("Cycles: %d\nNetwork Activity: %d", 
-                niveau.getNbSolution(), networkActivity);
+            int totalSize = calculateTotalSize();
+            String stats = String.format("Cycles: %d\nCode Size: %d\nNetwork Activity: %d", 
+                niveau.getNbSolution(), totalSize, networkActivity);
             JOptionPane.showMessageDialog(gameWindow, "MISSION ACCOMPLISHED!\n" + stats, "Success", JOptionPane.INFORMATION_MESSAGE);
             gameWindow.afficherOptionsNiveau();
             gameWindow.frame2.dispose();
         }
+    }
+
+    private int calculateTotalSize() {
+        int size = countLines(gameWindow.getTextZone().getTextArea().getText());
+        if (gameWindow.getTextZone2() != null) {
+            size += countLines(gameWindow.getTextZone2().getTextArea().getText());
+        }
+        return size;
+    }
+
+    private int countLines(String code) {
+        if (code == null || code.isEmpty()) return 0;
+        String[] lines = code.split("\n");
+        int count = 0;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty() && !trimmed.startsWith(";") && !trimmed.startsWith("//") && !trimmed.endsWith(":")) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void handleTest(Robot robot, String[] args) {

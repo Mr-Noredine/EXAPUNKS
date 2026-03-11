@@ -33,7 +33,12 @@ public class Controller implements Runnable {
         while (gameThread != null) {
             try {
                 SharedSemaphore.acquire();
-                update(1);
+                // Execute one step for each active robot
+                for (model.Robot robot : gameWindow.getNiveau().getGrille().getListeRobots()) {
+                    if (robot.estActif()) {
+                        update(robot.getId());
+                    }
+                }
             } catch(InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -42,9 +47,16 @@ public class Controller implements Runnable {
     }
 
     public void update(int id) {     
-        String code = gameWindow.getTextZone().getTextArea().getText();
-        System.out.println(code);
-        gameController.executeNextStep(id, code);  
+        String code = "";
+        if (id == 1) {
+            code = gameWindow.getTextZone().getTextArea().getText();
+        } else if (id == 2 && gameWindow.getTextZone2() != null) {
+            code = gameWindow.getTextZone2().getTextArea().getText();
+        }
+        
+        if (!code.isEmpty()) {
+            gameController.executeNextStep(id, code);  
+        }
     }
 
     public void paintComponent() {

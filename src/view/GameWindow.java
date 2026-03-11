@@ -226,6 +226,8 @@ public class GameWindow extends JPanel{
             if (controller != null) controller.getGameController().setSpeed(speedSlider.getValue());
         });
         
+        setupShortcuts(frame2);
+        
         if (niveau instanceof Niveau3) {
             textZone2 = new TextZone();
             JPanel textZonesPanel = new JPanel();
@@ -271,10 +273,48 @@ public GamePanel getGamePanel() {
 public Controller getController() {
     return controller;
 }
+public Niveau getNiveau() {
+    return niveau;
+}
 
-    public Niveau getNiveau() {
-        return niveau;
-    }
+private void setupShortcuts(JFrame targetFrame) {
+    JRootPane rootPane = targetFrame.getRootPane();
+    InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+    ActionMap actionMap = rootPane.getActionMap();
+
+    // STEP: Right Arrow
+    inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "stepAction");
+    actionMap.put("stepAction", new AbstractAction() {
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            SharedSemaphore.release();
+        }
+    });
+
+    // RUN: Space
+    // Note: Space might be consumed by buttons, but WHEN_IN_FOCUSED_WINDOW should work
+    inputMap.put(KeyStroke.getKeyStroke("SPACE"), "runAction");
+    actionMap.put("runAction", new AbstractAction() {
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            if (controller != null) controller.getGameController().startAutoRun();
+        }
+    });
+
+    // PAUSE: P
+    inputMap.put(KeyStroke.getKeyStroke("P"), "pauseAction");
+    actionMap.put("pauseAction", new AbstractAction() {
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            if (controller != null) controller.getGameController().stopAutoRun();
+        }
+    });
+
+    // RESET: R
+    inputMap.put(KeyStroke.getKeyStroke("R"), "resetAction");
+    actionMap.put("resetAction", new AbstractAction() {
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            if (controller != null) controller.getGameController().resetGame();
+        }
+    });
+}
 
     public void afficherOptionsNiveau() {
         JFrame niveauFrame = new JFrame("Choix du Niveau");
